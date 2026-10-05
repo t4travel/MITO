@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MITO Members Directory</title>
+<style>
+:root{--blue:#1b3a6b;--blue2:#315b94;--ink:#202432;--muted:#707789;--line:#e6eaf0;--bg:#f5f7fb;--white:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+.hero{background:linear-gradient(120deg,var(--blue),var(--blue2));color:#fff;padding:25px 18px}
+.wrap{max-width:1180px;margin:auto;padding:0 18px}.hero h1{font-size:29px;line-height:1.2;margin:0}.hero p{margin:6px 0 0;opacity:.88}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;padding:18px 0 8px}.toolbar input,.toolbar select{background:#fff;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font:inherit;min-width:160px}.toolbar input{flex:1;min-width:230px}
+.status{font-size:12px;color:var(--muted);padding:4px 0 14px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:13px;padding-bottom:36px}
+.card{background:var(--white);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:0 3px 12px #18284a0a;display:flex;flex-direction:column;min-width:0}
+.photo{height:132px;background:linear-gradient(135deg,#dce6f5,#b9cbe5);background-size:cover;background-position:center;display:grid;place-items:center;color:#fff;font-size:34px;font-weight:650;position:relative}
+.photo.initials{color:#fff}.content{padding:12px;display:flex;flex-direction:column;align-items:flex-start;flex:1}
+.name{font-size:15px;font-weight:700;line-height:1.3;margin:0;overflow-wrap:anywhere}.service{font-size:12px;color:var(--blue);font-weight:600;margin-top:4px;line-height:1.35}.firm,.city{font-size:12px;color:var(--muted);margin-top:3px;overflow-wrap:anywhere}
+.links{display:flex;gap:7px;align-items:center;margin-top:10px;min-height:27px}.links a{width:27px;height:27px;border-radius:50%;display:grid;place-items:center;background:#edf2fa;color:var(--blue);text-decoration:none;font-size:12px;font-weight:750}.links a:hover{background:#dce7f7}
+.more{margin-top:auto;padding-top:12px}.more button{border:1px solid #d7e1f0;background:#fff;color:var(--blue);border-radius:7px;padding:6px 10px;font:600 12px inherit;cursor:pointer}.more button:hover{background:#f1f5fb}
+#none{display:none;color:var(--muted);padding:22px 0}.notice{background:#fff7e7;color:#72521b;border:1px solid #f2dfb8;padding:10px 12px;border-radius:9px;font-size:12px;margin:4px 0 12px}
+.modal{position:fixed;inset:0;background:#10182799;display:none;align-items:center;justify-content:center;padding:18px;z-index:10}.modal.open{display:flex}.dialog{background:#fff;width:min(580px,100%);max-height:90vh;overflow:auto;border-radius:15px;box-shadow:0 20px 70px #0003;position:relative}.close{position:absolute;right:12px;top:12px;border:0;background:#ffffffdf;border-radius:50%;width:32px;height:32px;font-size:20px;cursor:pointer;z-index:1}.profile-photo{height:210px;background:#e5ebf5 center/cover;display:grid;place-items:center;color:var(--blue);font-size:46px;font-weight:700}.profile{padding:19px}.profile h2{margin:0;font-size:23px}.profile .detail{margin-top:12px}.label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:750;color:var(--muted)}.value{font-size:13px;margin-top:2px;white-space:pre-wrap;overflow-wrap:anywhere}.profile-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}.profile-links a{font-size:12px;color:var(--blue);text-decoration:none;background:#edf2fa;padding:6px 10px;border-radius:7px}
+.error{color:#9a2b2b;background:#fff0f0;border:1px solid #f0c7c7;padding:10px 12px;border-radius:9px;font-size:12px;margin:4px 0 12px;display:none}
+@media(max-width:520px){.hero h1{font-size:25px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.wrap{padding:0 12px}.photo{height:112px}.content{padding:10px}.name{font-size:14px}}
+</style>
+</head>
+<body>
+<header class="hero"><div class="wrap"><h1>MITO Members Directory</h1><p>Discover, connect and collaborate with MITO members.</p></div></header>
+<main class="wrap">
+ <div class="toolbar"><input id="q" type="search" placeholder="Search name, firm, service, city…" aria-label="Search members"><select id="city"><option value="">All cities</option></select><select id="sector"><option value="">All sectors</option></select></div>
+ <div class="status" id="status">Loading member directory…</div>
+ <div class="error" id="error"></div>
+ <div id="grid" class="grid"></div><div id="none">No members match your search.</div>
+</main>
+<div id="modal" class="modal" role="dialog" aria-modal="true" aria-label="Member profile"><div class="dialog"><button class="close" id="close" aria-label="Close">×</button><div id="profile"></div></div></div>
+<script>
+// PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE AFTER DEPLOYMENT.
+const API_URL = "https://script.google.com/macros/s/AKfycbw0GBWhIb3QP21Av2RL6XqlinCPyJo_wWUqwxgOP1WRQgdfcRjpxcnYLyUX3osg7UFIrA/exec";
+
+let members=[];
+const $=id=>document.getElementById(id), val=(m,k)=>String(m[k]||"").trim();
+function esc(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function safeUrl(s){s=String(s||"").trim();if(!s)return"";if(/^mailto:|^tel:|^https?:\/\//i.test(s))return s;return"https://"+s}
+function linkIcon(href,type,title){if(!href)return"";let glyph={website:'↗',email:'✉',phone:'☎',linkedin:'in',insta:'◎',x:'𝕏',facebook:'f'}[type]||'↗';return `<a href="${esc(safeUrl(href))}" target="_blank" rel="noopener noreferrer" title="${esc(title)}" aria-label="${esc(title)}">${glyph}</a>`}
+function getImg(m){for(let i=1;i<=5;i++){let x=val(m,"ProductImg"+i);if(x)return x}return""}
+function fullName(m){return [val(m,"Title"),val(m,"FirstName"),val(m,"LastName")].filter(Boolean).join(" ")||val(m,"Company")||"MITO Member"}
+function initials(s){return s.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join("").toUpperCase()||"M"}
+function social(m){return linkIcon(val(m,"website"),"website","Website")+linkIcon(val(m,"email")?"mailto:"+val(m,"email"):"","email","Email")+linkIcon(val(m,"Contact1")?"tel:"+val(m,"Contact1"):"","phone","Phone")+linkIcon(val(m,"LinkedIn"),"linkedin","LinkedIn")+linkIcon(val(m,"Insta"),"insta","Instagram")+linkIcon(val(m,"X"),"x","X")+linkIcon(val(m,"Facebook"),"facebook","Facebook")}
+function card(m,i){let name=fullName(m),img=getImg(m),loc=[val(m,"City"),val(m,"Country")].filter(Boolean).join(", ");let bg=img?`style="background-image:url('${esc(img)}')"`:"";return `<article class="card"><div class="photo ${img?"":"initials"}" ${bg}>${img?"":esc(initials(name))}</div><div class="content"><h3 class="name">${esc(name)}</h3><div class="service">${esc(val(m,"Business_Profession")||val(m,"Products_Services")||"")}</div><div class="firm">${esc(val(m,"Company"))}</div><div class="city">${esc(loc)}</div><div class="links">${social(m)}</div><div class="more"><button type="button" data-member="${i}">View More ↗</button></div></div></article>`}
+const detailFields=[["Business / Profession","Business_Profession"],["Sector","Sector"],["Products / Services","Products_Services"],["Looking For","LookingFor"],["How I Can Help MITO Members","How_I_Can_Help_MITO_Members"],["How MITO Members Can Help Me","How_MITO_Members_Can_Help_Me"],["Contact 1","Contact1"],["Contact 2","contact2"],["Email","email"],["Website","website"]];
+function showProfile(m){let img=getImg(m),name=fullName(m),loc=[val(m,"City"),val(m,"Country")].filter(Boolean).join(", ");$("profile").innerHTML=`<div class="profile-photo" ${img?`style="background-image:url('${esc(img)}')"`:""}>${img?"":esc(initials(name))}</div><div class="profile"><h2>${esc(name)}</h2>${val(m,"Company")?`<div class="firm">${esc(val(m,"Company"))}</div>`:""}${loc?`<div class="city">${esc(loc)}</div>`:""}${detailFields.map(([label,key])=>val(m,key)?`<div class="detail"><div class="label">${esc(label)}</div><div class="value">${esc(val(m,key))}</div></div>`:"").join("")}<div class="profile-links">${social(m)}</div></div>`;$("modal").classList.add("open")}
+function populate(){let cities=[...new Set(members.map(m=>val(m,"City")).filter(Boolean))].sort(),sectors=[...new Set(members.map(m=>val(m,"Sector")).filter(Boolean))].sort();$("city").innerHTML='<option value="">All cities</option>'+cities.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("");$("sector").innerHTML='<option value="">All sectors</option>'+sectors.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("")}
+function filtered(){let q=$("q").value.trim().toLowerCase(),c=$("city").value,s=$("sector").value;return members.filter(m=>Object.values(m).join(" ").toLowerCase().includes(q)&&(!c||val(m,"City")===c)&&(!s||val(m,"Sector")===s))}
+function render(){let found=filtered();$("grid").innerHTML=found.map((m,i)=>card(m,i)).join("");$("none").style.display=found.length?"none":"block";$("status").textContent=`${found.length} member${found.length===1?"":"s"} shown · live sheet data`}
+$("grid").addEventListener("click",e=>{let b=e.target.closest("button[data-member]");if(b){let found=filtered();showProfile(found[Number(b.dataset.member)])}});
+$("close").onclick=()=>$("modal").classList.remove("open");$("modal").addEventListener("click",e=>{if(e.target===$("modal"))$("modal").classList.remove("open")});document.addEventListener("keydown",e=>{if(e.key==="Escape")$("modal").classList.remove("open")});
+["q","city","sector"].forEach(id=>$(id).addEventListener(id==="q"?"input":"change",render));
+async function load(){if(!API_URL||API_URL.includes("PASTE_YOUR")){ $("status").textContent="API not connected yet.";$("error").style.display="block";$("error").textContent="Open this HTML after adding your Google Apps Script Web App URL in API_URL.";return}try{let separator=API_URL.includes("?")?"&":"?";let r=await fetch(API_URL+separator+"t="+Date.now(),{cache:"no-store"});if(!r.ok)throw Error("API request failed: "+r.status);let json=await r.json();if(!json.ok)throw Error(json.error||"The API returned an error.");members=Array.isArray(json.data)?json.data:[];populate();render()}catch(e){$("status").textContent="Could not load the live member directory.";$("error").style.display="block";$("error").textContent="Please check the Google Apps Script deployment and API URL.";console.error(e)}}
+load();
+</script>
+</body>
+</html>
